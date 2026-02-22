@@ -1,4 +1,4 @@
-# LegitSense - external cheat cs2 in python
+# LegitSense - external cheat cs2 in python (fork of PyIt)
 
 LegitSense is a completely free, open-source cheat. It's 100% written in Python, without requiring the installation of third-party libraries outside of the package manager "pip." Without writing to the game's memory, it offers the following features: WH, Aim, Trigger Bot.
 
