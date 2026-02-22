@@ -2,7 +2,6 @@
 
 LegitSense is a completely free, open-source cheat. It's 100% written in Python, without requiring the installation of third-party libraries outside of the package manager "pip." Without writing to the game's memory, it offers the following features: WH, Aim, Trigger Bot.
 
-<img width="1536" height="1024" alt="изображение" src="https://github.com/user-attachments/assets/76c5c0d3-2f68-45a7-a77a-3a1c1324ce00" />
 
 
 # To install:
@@ -18,7 +17,7 @@ pip install -r requirements.txt
 
 # Launch
 ```sh
-python px.py
+python LegitSense.py
 ```
 
 # Functions
