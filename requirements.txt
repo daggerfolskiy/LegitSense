@@ -1,0 +1,10 @@
+requests
+psutil
+pywin32
+pyautogui
+glfw
+imgui[glfw]
+PyOpenGL
+Pillow
+numpy
+scipy
