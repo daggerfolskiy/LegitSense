@@ -2309,8 +2309,7 @@ def DiscordRPC(settings):
                     rpc.connect()
                 
                 rpc.update(
-                    details="LegitSense",
-                    state="pena",
+                    details="Pena",
                     start=time.time(),
                     large_image="logo",
                     buttons=[
@@ -2347,7 +2346,8 @@ if __name__ == "__main__":
                 Process(target=wallhack, args=(settings,)),
                 Process(target=aimbot, args=(settings,)),
                 Process(target=norecoil, args=(settings,)),
-                Process(target=auto_accept, args=(settings,))
+                Process(target=auto_accept, args=(settings,)),
+                Process(target=DiscordRPC, args=(settings,))
             ]
             for process in processes:
                 process.start()
