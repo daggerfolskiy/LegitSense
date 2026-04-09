@@ -202,10 +202,10 @@ def esp_line(pm, entity_pawn_addr, view_matrix, width, height):
 
     return bottom_left_x, bottom_y, bone_matrix, headX, headY, headZ, head_pos
 
-def esp_aim(pm, entity_pawn_addr, view_matrix, width, height):
+def esp_aim(pm, entity_pawn_addr, view_matrix, width, height, bone_id=6):
     game_scene = pm.read_longlong(entity_pawn_addr + m_pGameSceneNode)
     bone_matrix = pm.read_longlong(game_scene + m_modelState + 0x80)
-    data = pm.read_bytes(bone_matrix + 6 * 0x20, 3 * 4)
+    data = pm.read_bytes(bone_matrix + bone_id * 0x20, 3 * 4)
     headX, headY, headZ = struct.unpack('fff', data)
     head_pos = w2s(view_matrix, headX, headY, headZ, width, height)
     legZ = pm.read_float(bone_matrix + 28 * 0x20 + 0x8)
@@ -1396,7 +1396,7 @@ class Aimbot:
                     max_deltaZ = target['deltaZ']
                     best_target = target
         return best_target
-    
+
     def run(self):
         while True:
             try:
@@ -1500,7 +1500,6 @@ class Aimbot:
 def aimbot(s):
     aimbot_instance = Aimbot(s)
     aimbot_instance.run()
-
 
 def find_button():
     screenshot = ImageGrab.grab()
@@ -1690,7 +1689,7 @@ class Settings:
             "esp_bomb_color": (1.0, 0.0, 0.0, 1.0), "esp_bomb_defusing_color": (0.0, 1.0, 0.0, 1.0),
             "esp_dropped_weapon_color": (1.0, 1.0, 1.0, 1.0), "esp_fov_color": (1.0, 1.0, 1.0, 0.7),
             "esp_crosshair_color": (0.0, 1.0, 0.0, 1.0),
-            "aimbot_enable": False, "aimbot_key": "MOUSE5", "aim_bone": 6, "aim_attack_all": False, "draw_fov": True,
+            "aimbot_enable": False, "aimbot_key": "MOUSE5", "aim_bone": 4, "aim_attack_all": False, "draw_fov": True,
             "aimbot_fov": 40.0, "aimbot_speed": 1.6, "aimbot_smooth": 1.0, "aimbot_smooth_intensity": 1.0, "aimbot_ease_out": 0.85, "aimbot_overshoot_chance": 0.3, "aimbot_overshoot_strength": 3.5,
             "trigger_enable": False, "trigger_attack_all": False, "trigger_key": "MOUSE4", "trigger_delay": 0.01, "trigger_flash_check": True,
             "bunnyhop_enable": True, "bunnyhop_key": "SPACE", "noflash_enable": False, "noflash_strength": 1.0, "radar_enable": True, "draw_crosshair": True, "watermark_enable": True,
