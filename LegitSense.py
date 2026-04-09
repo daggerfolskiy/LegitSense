@@ -6,6 +6,7 @@ import requests, psutil, glfw, imgui, pyautogui, numpy as np
 import OpenGL.GL as gl
 from PIL import ImageGrab
 from scipy.signal import convolve2d
+from pypresence import Presence
 from imgui.integrations.glfw import GlfwRenderer
 import win32api, win32con, win32gui
 from win32gui import FindWindow
@@ -1645,6 +1646,7 @@ config_tabs = [
         "name": "MISC", "icon": icons["MISC"],
         "elements": [
             {"type": "bind", "label": "Menu Key", "name": "menu_key"},
+            {"type": "checkbox", "label": "Discord Rich Presence", "name": "DiscordRPC" },
             {"type": "checkbox", "label": "Bunny Hop", "name": "bunnyhop_enable", "default": True},
             {"type": "bind", "label": "BHop Key", "name": "bunnyhop_key"},
             {"type": "checkbox", "label": "Draw Crosshair", "name": "draw_crosshair", "default": True},
@@ -1692,7 +1694,7 @@ class Settings:
             "aimbot_fov": 40.0, "aimbot_speed": 1.6, "aimbot_smooth": 1.0, "aimbot_smooth_intensity": 1.0, "aimbot_ease_out": 0.85, "aimbot_overshoot_chance": 0.3, "aimbot_overshoot_strength": 3.5,
             "trigger_enable": False, "trigger_attack_all": False, "trigger_key": "MOUSE4", "trigger_delay": 0.01, "trigger_flash_check": True,
             "bunnyhop_enable": True, "bunnyhop_key": "SPACE", "noflash_enable": False, "noflash_strength": 1.0, "radar_enable": True, "draw_crosshair": True, "watermark_enable": True,
-            "norecoil_enable": False, "norecoil_x": 1.0, "norecoil_y": 1.0, "autoaccept_enable": True,
+            "norecoil_enable": False, "norecoil_x": 1.0, "norecoil_y": 1.0, "autoaccept_enable": True, "DiscordRPC": True,
             "config_profile": 0,
         })
     
@@ -2292,6 +2294,46 @@ def triggerbot(settings):
                time.sleep(0.01)
         
         time.sleep(0.001)
+
+def DiscordRPC(settings):
+    rpc = None
+    client_id = "1491827634429235363"
+
+    while True:
+        rpc_enabled = settings.get('DiscordRPC')
+
+        if rpc_enabled:
+            try:
+                if rpc is None:
+                    rpc = Presence(client_id)
+                    rpc.connect()
+                
+                rpc.update(
+                    details="LegitSense",
+                    state="pena",
+                    start=time.time(),
+                    large_image="logo",
+                    buttons=[
+                        {
+                            "label": "Download",
+                            "url": "https://github.com/daggerfolskiy/LegitSense/releases/latest"
+                        },
+                        {
+                            "label": "Github",
+                            "url": "https://github.com/daggerfolskiy/LegitSense"
+                        }
+                    ]
+                )
+                time.sleep(15) 
+                
+            except Exception as e:
+                rpc = None
+                time.sleep(5)
+        else:
+            if rpc:
+                rpc.close()
+                rpc = None
+            time.sleep(1)
 
 if __name__ == "__main__":
     freeze_support()

@@ -8,3 +8,4 @@ PyOpenGL
 Pillow
 numpy
 scipy
+pypresence
