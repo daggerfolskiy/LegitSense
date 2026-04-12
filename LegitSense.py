@@ -2297,6 +2297,7 @@ def triggerbot(settings):
 def DiscordRPC(settings):
     rpc = None
     client_id = "1491827634429235363"
+    start_time = time.time()
 
     while True:
         rpc_enabled = settings.get('DiscordRPC')
@@ -2309,7 +2310,7 @@ def DiscordRPC(settings):
                 
                 rpc.update(
                     details="Pena",
-                    start=time.time(),
+                    start=start_time,
                     large_image="logo",
                     buttons=[
                         {
@@ -2322,7 +2323,6 @@ def DiscordRPC(settings):
                         }
                     ]
                 )
-                time.sleep(15) 
                 
             except Exception as e:
                 rpc = None
