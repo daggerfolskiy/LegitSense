@@ -101,6 +101,12 @@ m_vOldOrigin = client_dll['client.dll']['classes']['C_BasePlayerPawn']['fields']
 m_iShotsFired = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_iShotsFired']
 m_nBombSite = client_dll['client.dll']['classes']['C_PlantedC4']['fields']['m_nBombSite']
 m_flFlashDuration = client_dll['client.dll']['classes']['C_CSPlayerPawnBase']['fields']['m_flFlashDuration']
+m_Glow = client_dll['client.dll']['classes']['C_BaseModelEntity']['fields']['m_Glow']
+m_bGlowing = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_bGlowing']
+m_iGlowType = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_iGlowType']
+m_glowColorOverride = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_glowColorOverride']
+
+version = "2.4"
 
 def make_dpi_aware():
     try:
@@ -556,8 +562,23 @@ class MemoryReader:
             max_length,
             ctypes.byref(bytes_read)
         )
-        
-        return buffer.value.decode('utf-8', 'ignore') if bytes_read.value > 0 else ""
+    def write(self, address, c_type, value):
+        buffer = c_type(value)
+        bytes_written = ctypes.c_size_t()
+        ctypes.windll.kernel32.WriteProcessMemory(
+            self.process_handle,
+            ctypes.c_void_p(address),
+            ctypes.byref(buffer),
+            ctypes.sizeof(buffer),
+            ctypes.byref(bytes_written)
+        )
+        return bytes_written.value == ctypes.sizeof(buffer)
+
+    def write_bool(self, address, value):
+        return self.write(address, ctypes.c_bool, value)
+
+    def write_int(self, address, value):
+        return self.write(address, ctypes.c_uint32, value)
 
 manager = ProcessManager()
 memory = None
@@ -582,6 +603,12 @@ def Memory(pid):
 
 weapon_font = None
 verdana_font = None
+
+
+def calc_color(r,g,b,a):
+
+	colorInt = r | (g << 8) | (b << 16) | (a << 24)
+	return colorInt
 
 def create_window():
     global weapon_font, verdana_font
@@ -806,46 +833,57 @@ def draw_corners(draw_list, x, y, x1, y1, color, px_size, percentage=0.2):
 
 def draw_text(draw_list, x, y, text, color):
     global verdana_font
-    if not verdana_font: return
+    if not verdana_font or not text:
+        return
     imgui.push_font(verdana_font)
-    shadow_x, shadow_y = x + 1, y + 1
-    imgui_shadow_color = imgui.get_color_u32_rgba(*(0, 0, 0, 1))
-    draw_list.add_text(shadow_x, shadow_y, imgui_shadow_color, text)
-    imgui_color = imgui.get_color_u32_rgba(*color)
-    draw_list.add_text(x, y, imgui_color, text)
-    imgui.pop_font()
+    try:
+        shadow_x, shadow_y = x + 1, y + 1
+        imgui_shadow_color = imgui.get_color_u32_rgba(0, 0, 0, 1)
+        draw_list.add_text(shadow_x, shadow_y, imgui_shadow_color, str(text))
+        imgui_color = imgui.get_color_u32_rgba(*color)
+        draw_list.add_text(x, y, imgui_color, str(text))
+    finally:
+        imgui.pop_font()
+
 
 def draw_nickname(draw_list, text, head_pos, rightX, leftX, color):
     global verdana_font
-    if not verdana_font: return
+    if not verdana_font or not text:
+        return
     imgui.push_font(verdana_font)
-    text_size = imgui.calc_text_size(text)
-    text_width = text_size.x
-    text_height = text_size.y
-    x = (rightX + leftX - text_width) / 2
-    y = head_pos[1] - text_height - 5
-    shadow_x, shadow_y = x + 1, y + 1
-    imgui_shadow_color = imgui.get_color_u32_rgba(*(0, 0, 0, 1))
-    draw_list.add_text(shadow_x, shadow_y, imgui_shadow_color, text)
-    imgui_color = imgui.get_color_u32_rgba(*color)
-    draw_list.add_text(x, y, imgui_color, text)
-    imgui.pop_font()
+    try:
+        text_size = imgui.calc_text_size(str(text))
+        text_width = text_size.x
+        text_height = text_size.y
+        x = (rightX + leftX - text_width) / 2
+        y = head_pos[1] - text_height - 5
+
+        shadow_x, shadow_y = x + 1, y + 1
+        imgui_shadow_color = imgui.get_color_u32_rgba(0, 0, 0, 1)
+        draw_list.add_text(shadow_x, shadow_y, imgui_shadow_color, str(text))
+        imgui_color = imgui.get_color_u32_rgba(*color)
+        draw_list.add_text(x, y, imgui_color, str(text))
+    finally:
+        imgui.pop_font()
+
 
 def draw_weapon(draw_list, weapon_icon, leg_pos, rightX, leftX, color):
-    if weapon_icon:
-        global weapon_font
-        if not weapon_font: return
-        imgui.push_font(weapon_font)
+    if not weapon_icon or not weapon_font:
+        return
+    imgui.push_font(weapon_font)
+    try:
         text_size = imgui.calc_text_size(weapon_icon)
         text_width = text_size.x
         text_height = text_size.y / 2.5
         x = (rightX + leftX - text_width) / 2
         y = leg_pos[1] + text_height
+
         shadow_x, shadow_y = x + 1, y + 1
-        imgui_shadow_color = imgui.get_color_u32_rgba(*(0, 0, 0, 1))
+        imgui_shadow_color = imgui.get_color_u32_rgba(0, 0, 0, 1)
         draw_list.add_text(shadow_x, shadow_y, imgui_shadow_color, weapon_icon)
         imgui_color = imgui.get_color_u32_rgba(*color)
         draw_list.add_text(x, y, imgui_color, weapon_icon)
+    finally:
         imgui.pop_font()
 
 def angle_to_direction(pitch: float, yaw: float) -> tuple:
@@ -1573,8 +1611,9 @@ config_tabs = [
         "name": "ESP", "icon": icons["ESP"],
         "elements": [
             {"type": "checkbox", "label": "Enable ESP", "name": "esp_enable", "default": True},
+            {"type": "checkbox", "label": "Glow ESP", "name": "glow_enable", "default": False,  "dependencies": [("anti_vac", False)]},
             {"type": "checkbox", "label": "ESP Box", "name": "esp_box", "default": True},
-            {"type": "checkbox", "label": "Filled Box", "name": "esp_filled_box", "default": True, "dependencies": [("esp_box", True)]},
+            {"type": "checkbox", "label": "Filled Box", "name": "esp_filled_box", "default": True,},
             {"type": "checkbox", "label": "Corners", "name": "esp_corners", "default": True},
             {"type": "checkbox", "label": "Skeleton", "name": "esp_skeleton", "default": True},
             {"type": "checkbox", "label": "Names", "name": "esp_names", "default": True},
@@ -1593,6 +1632,7 @@ config_tabs = [
         "elements": [
             {"type": "color", "label": "Ally Color", "name": "esp_ally_color"},
             {"type": "color", "label": "Enemy Color", "name": "esp_enemy_color"},
+            {"type": "color", "label": "Glow Color", "name": "glow_color"},
             {"type": "color", "label": "Ally Snapline", "name": "esp_ally_snapline_color"},
             {"type": "color", "label": "Enemy Snapline", "name": "esp_enemy_snapline_color"},
             {"type": "color", "label": "Box Border", "name": "esp_box_border_color"},
@@ -1645,6 +1685,7 @@ config_tabs = [
         "name": "MISC", "icon": icons["MISC"],
         "elements": [
             {"type": "bind", "label": "Menu Key", "name": "menu_key"},
+            {"type": "checkbox", "label": "Vac Safe", "name": "anti_vac" },
             {"type": "checkbox", "label": "Discord Rich Presence", "name": "DiscordRPC" },
             {"type": "checkbox", "label": "Bunny Hop", "name": "bunnyhop_enable", "default": True},
             {"type": "bind", "label": "BHop Key", "name": "bunnyhop_key"},
@@ -1673,6 +1714,7 @@ class Settings:
         self.config_dir = "configs"
         self._data = manager.dict({
             "menu_key": 0xA1,
+            "anti_vac": True,
             "esp_enable": True, "esp_box": True, "esp_filled_box": True, "esp_corners": True,
             "esp_skeleton": True, "esp_names": True, "esp_weapons": True, "esp_health_bar": True,
             "esp_armor_bar": True, "esp_head_dot": True, "esp_snap_lines": False, "esp_eye_lines": True,
@@ -1689,6 +1731,8 @@ class Settings:
             "esp_bomb_color": (1.0, 0.0, 0.0, 1.0), "esp_bomb_defusing_color": (0.0, 1.0, 0.0, 1.0),
             "esp_dropped_weapon_color": (1.0, 1.0, 1.0, 1.0), "esp_fov_color": (1.0, 1.0, 1.0, 0.7),
             "esp_crosshair_color": (0.0, 1.0, 0.0, 1.0),
+            "glow_enable": False,
+            "glow_color": (1.0, 0.0, 0.0, 1.0),
             "aimbot_enable": False, "aimbot_key": "MOUSE5", "aim_bone": 4, "aim_attack_all": False, "draw_fov": True,
             "aimbot_fov": 40.0, "aimbot_speed": 1.6, "aimbot_smooth": 1.0, "aimbot_smooth_intensity": 1.0, "aimbot_ease_out": 0.85, "aimbot_overshoot_chance": 0.3, "aimbot_overshoot_strength": 3.5,
             "trigger_enable": False, "trigger_attack_all": False, "trigger_key": "MOUSE4", "trigger_delay": 0.01, "trigger_flash_check": True,
@@ -1866,6 +1910,16 @@ def esp(draw_list):
             
             immunity = esp_immunity(pm, entity_pawn_addr)
             is_ally = entity_team == local_player_team
+            if not is_ally and not settings.get("anti_vac", True) and settings.get("glow_enable", False):
+                try:
+                    r, g, b, a = [int(c * 255) for c in settings.get("glow_color", (1.0, 0.0, 0.0, 1.0))]
+                    color_int = calc_color(r, g, b, a)
+                    glow_base = entity_pawn_addr + m_Glow
+                    pm.write_bool(glow_base + m_bGlowing, True)
+                    pm.write_int(glow_base + m_iGlowType, 4)
+                    pm.write_int(glow_base + m_glowColorOverride, color_int)
+                except Exception as e:
+                    return
             
             espcolor = s['esp_ally_color'] if is_ally else s['esp_enemy_color']
             linecolor = s['esp_ally_snapline_color'] if is_ally else s['esp_enemy_snapline_color']
@@ -1932,14 +1986,17 @@ def esp(draw_list):
                     text += f" | DEFUSE: {defuse_time:.1f}s"
                 bomb_color = s['esp_bomb_defusing_color'] if is_defusing else s['esp_bomb_color']
                 draw_text(draw_list, bomb_pos[0], bomb_pos[1], text, color=bomb_color)
-    except Exception:
+    except:
         pass
-        
-    global weapon_draw_list
-    if weapon_draw_list is not None and s["esp_dropped_weapons"]:
-        dweaponcolor = s['esp_dropped_weapon_color']
-        for weapon in weapon_draw_list:
-            draw_text(draw_list, weapon['pos'][0], weapon['pos'][1], weapon['name'], dweaponcolor)
+    try:
+        global weapon_draw_list
+        if weapon_draw_list is not None and s.get("esp_dropped_weapons", False):
+            dweaponcolor = s['esp_dropped_weapon_color']
+            for weapon in weapon_draw_list:
+                if weapon and weapon.get('pos') and weapon.get('name'):
+                    draw_text(draw_list, weapon['pos'][0], weapon['pos'][1], weapon['name'], dweaponcolor)
+    except:
+        pass
 
 settings = None
 
@@ -2309,7 +2366,7 @@ def DiscordRPC(settings):
                     rpc.connect()
                 
                 rpc.update(
-                    details="Pena",
+                    details="V: " + version,
                     start=start_time,
                     large_image="logo",
                     buttons=[
@@ -2323,7 +2380,6 @@ def DiscordRPC(settings):
                         }
                     ]
                 )
-                
             except Exception as e:
                 rpc = None
                 time.sleep(5)
