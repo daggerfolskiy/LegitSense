@@ -106,7 +106,7 @@ m_bGlowing = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_b
 m_iGlowType = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_iGlowType']
 m_glowColorOverride = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_glowColorOverride']
 
-version = "2.4"
+version = "3.0"
 
 def make_dpi_aware():
     try:
