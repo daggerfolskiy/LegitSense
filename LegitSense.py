@@ -18,22 +18,22 @@ MAX_MODULE_NAME32 = 255
 
 
 bone_ids = {
-    "head": 6,
-    "neck": 5,
-    "spine": 4,
-    "pelvis": 0,
+    "head": 7,
+    "neck": 6,
+    "spine": 8,
+    "pelvis": 1,
     "left_shoulder": 13,
     "left_elbow": 14,
     "left_wrist": 15,
     "right_shoulder": 9,
     "right_elbow": 10,
     "right_wrist": 11,
-    "left_hip": 25,
-    "left_knee": 26,
-    "left_ankle": 27,
-    "right_hip": 22,
-    "right_knee": 23,
-    "right_ankle": 24,
+    "left_hip": 17,
+    "left_knee": 18,
+    "left_ankle": 19,
+    "right_hip": 20,
+    "right_knee": 21,
+    "right_ankle": 22,
 }
 bone_connections = [
     ("head", "neck"),
@@ -77,7 +77,6 @@ m_modelState = client_dll['client.dll']['classes']['CSkeletonInstance']['fields'
 m_hPlayerPawn = client_dll['client.dll']['classes']['CCSPlayerController']['fields']['m_hPlayerPawn']
 m_iHealth = client_dll['client.dll']['classes']['C_BaseEntity']['fields']['m_iHealth']
 m_iszPlayerName = client_dll['client.dll']['classes']['CBasePlayerController']['fields']['m_iszPlayerName']
-m_pClippingWeapon = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_pClippingWeapon']
 m_bGunGameImmunity = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_bGunGameImmunity']
 m_AttributeManager = client_dll['client.dll']['classes']['C_EconEntity']['fields']['m_AttributeManager']
 m_Item = client_dll['client.dll']['classes']['C_AttributeContainer']['fields']['m_Item']
@@ -96,17 +95,18 @@ m_fFlags = client_dll['client.dll']['classes']['C_BaseEntity']['fields']['m_fFla
 m_pCameraServices = client_dll['client.dll']['classes']['C_BasePlayerPawn']['fields']['m_pCameraServices']
 m_iIDEntIndex = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_iIDEntIndex']
 m_vecVelocity = client_dll['client.dll']['classes']['C_BaseEntity']['fields']['m_vecVelocity']
-m_aimPunchAngle = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_aimPunchAngle']
 m_vOldOrigin = client_dll['client.dll']['classes']['C_BasePlayerPawn']['fields']['m_vOldOrigin']
 m_iShotsFired = client_dll['client.dll']['classes']['C_CSPlayerPawn']['fields']['m_iShotsFired']
+m_aimPunchAngle = 0x0
 m_nBombSite = client_dll['client.dll']['classes']['C_PlantedC4']['fields']['m_nBombSite']
 m_flFlashDuration = client_dll['client.dll']['classes']['C_CSPlayerPawnBase']['fields']['m_flFlashDuration']
+m_flFlashMaxAlpha = client_dll['client.dll']['classes']['C_CSPlayerPawnBase']['fields']['m_flFlashMaxAlpha']
 m_Glow = client_dll['client.dll']['classes']['C_BaseModelEntity']['fields']['m_Glow']
 m_bGlowing = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_bGlowing']
 m_iGlowType = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_iGlowType']
 m_glowColorOverride = client_dll['client.dll']['classes']['CGlowProperty']['fields']['m_glowColorOverride']
 
-version = "3.0"
+version = "3.1 semi fixed"
 
 def make_dpi_aware():
     try:
@@ -197,11 +197,11 @@ def esp_dweapon(pm, i, entity_list, view_matrix, width, height):
 def esp_line(pm, entity_pawn_addr, view_matrix, width, height):
     game_scene = pm.read_longlong(entity_pawn_addr + m_pGameSceneNode)
     bone_matrix = pm.read_longlong(game_scene + m_modelState + 0x80)
-    data = pm.read_bytes(bone_matrix + 6 * 0x20, 3 * 4)
+    data = pm.read_bytes(bone_matrix + 7 * 0x20, 3 * 4)
     headX, headY, headZ = struct.unpack('fff', data)
     headZ += 8
     head_pos = w2s(view_matrix, headX, headY, headZ, width, height)
-    legZ = pm.read_float(bone_matrix + 28 * 0x20 + 0x8)
+    legZ = pm.read_float(bone_matrix + 22 * 0x20 + 0x8)
     leg_pos = w2s(view_matrix, headX, headY, legZ, width, height)
     bottom_left_x = head_pos[0] - (head_pos[0] - leg_pos[0]) // 2
     bottom_y = leg_pos[1]
@@ -214,7 +214,7 @@ def esp_aim(pm, entity_pawn_addr, view_matrix, width, height, bone_id=6):
     data = pm.read_bytes(bone_matrix + bone_id * 0x20, 3 * 4)
     headX, headY, headZ = struct.unpack('fff', data)
     head_pos = w2s(view_matrix, headX, headY, headZ, width, height)
-    legZ = pm.read_float(bone_matrix + 28 * 0x20 + 0x8)
+    legZ = pm.read_float(bone_matrix + 22 * 0x20 + 0x8)
     leg_pos = w2s(view_matrix, headX, headY, legZ, width, height)
     deltaZ = abs(head_pos[1] - leg_pos[1])
     return head_pos, leg_pos, deltaZ
@@ -230,7 +230,7 @@ def read_vec3(pm, address):
     return vec3
 
 def esp_head_line(pm, entity_pawn_addr, bone_matrix, view_matrix, lenght, width, height):
-    data = pm.read_bytes(bone_matrix + 6 * 0x20, 3 * 4)
+    data = pm.read_bytes(bone_matrix + 7 * 0x20, 3 * 4)
     headX, headY, headZ = struct.unpack('fff', data)
     head_pos = w2s(view_matrix, headX, headY, headZ, width, height)
     firstX = head_pos[0]
@@ -244,7 +244,7 @@ def esp_head_line(pm, entity_pawn_addr, bone_matrix, view_matrix, lenght, width,
     return firstX, firstY, end_point 
 
 def esp_box(pm, bone_matrix, view_matrix, headX, headY, head_pos, width, height):
-    legZ = pm.read_float(bone_matrix + 28 * 0x20 + 0x8)
+    legZ = pm.read_float(bone_matrix + 22 * 0x20 + 0x8)
     leg_pos = w2s(view_matrix, headX, headY, legZ, width, height)
     deltaZ = abs(head_pos[1] - leg_pos[1])
     leftX = head_pos[0] - deltaZ // 4
@@ -253,7 +253,7 @@ def esp_box(pm, bone_matrix, view_matrix, headX, headY, head_pos, width, height)
     return leftX, leg_pos, rightX, deltaZ
 
 def esp_headbox(pm, bone_matrix, view_matrix, rightX, leftX, window_width, window_height):
-    data = pm.read_bytes(bone_matrix + 6 * 0x20, 3 * 4)
+    data = pm.read_bytes(bone_matrix + 7 * 0x20, 3 * 4)
     boneX, boneY, boneZ = struct.unpack('fff', data)
     rhead_pos = w2s(view_matrix, boneX, boneY, boneZ, window_width, window_height)
     head_hitbox_size = (rightX - leftX) / 4.5
@@ -262,15 +262,18 @@ def esp_headbox(pm, bone_matrix, view_matrix, rightX, leftX, window_width, windo
     head_hitbox_y = rhead_pos[1]
 
     return head_hitbox_x, head_hitbox_y, head_hitbox_radius
-
+    
 def esp_bone(pm, bone_matrix, view_matrix, window_width, window_height):
     bone_positions = {}
     for bone_name, bone_id in bone_ids.items():
-        data = pm.read_bytes(bone_matrix + bone_id * 0x20, 3 * 4)
-        boneX, boneY, boneZ = struct.unpack('fff', data)
-        bone_pos = w2s(view_matrix, boneX, boneY, boneZ, window_width, window_height)
-        if bone_pos[0] != -999 and bone_pos[1] != -999:
-            bone_positions[bone_name] = bone_pos
+        try:
+            data = pm.read_bytes(bone_matrix + bone_id * 0x20, 3 * 4)
+            boneX, boneY, boneZ = struct.unpack('fff', data)
+            bone_pos = w2s(view_matrix, boneX, boneY, boneZ, window_width, window_height)
+            if bone_pos[0] != -999 and bone_pos[1] != -999:
+                bone_positions[bone_name] = bone_pos
+        except Exception as e:
+            pass
 
     return bone_connections, bone_positions
 
@@ -311,8 +314,8 @@ def esp_br(pm, entity_pawn_addr, deltaZ, head_pos, rightX, leftX, leg_pos):
     armor_hp = pm.read_int(entity_pawn_addr + m_ArmorValue)
     max_armor_hp = 100
     armor_hp_percentage = min(1.0, max(0.0, armor_hp / max_armor_hp))
-    armor_bar_height = 2  # Height of the armor bar
-    armor_bar_width = rightX - leftX  # Width of the armor bar
+    armor_bar_height = 2  
+    armor_bar_width = rightX - leftX 
     armor_bar_x_left = leftX
     armor_bar_y_top = leg_pos[1] + 2  # 2 pixels below the bottom of the enemy box
     current_armor_width = armor_bar_width * armor_hp_percentage
@@ -422,6 +425,9 @@ class Config:
         old_punch_y = 0.0
 
 def no_recoil(pm, client, local_player_addr):
+    if m_aimPunchAngle == 0x0:
+        return 0, 0
+    
     aim_punch_x = pm.read_float(local_player_addr + m_aimPunchAngle)
     aim_punch_y = pm.read_float(local_player_addr + m_aimPunchAngle + 0x4)
     shots_fired = pm.read_int(local_player_addr + m_iShotsFired)
@@ -764,12 +770,11 @@ def draw_watermark():
     
     speed = 0.1 
     t = time.time() * speed
-    rgb = colorsys.hsv_to_rgb(t % 1.0, 0.8, 1.0) # Saturation 0.8, Value 1.0 для яркости
+    rgb = colorsys.hsv_to_rgb(t % 1.0, 0.8, 1.0)
     
-    # Цвета (ABGR формат для imgui.get_color_u32_rgba обычно требует 0-1 float)
     accent_color = imgui.get_color_u32_rgba(rgb[0], rgb[1], rgb[2], 1.0)
-    bg_color = imgui.get_color_u32_rgba(0.06, 0.06, 0.06, 0.90) # Темно-серый фон
-    text_color = imgui.get_color_u32_rgba(1.0, 1.0, 1.0, 1.0) # Белый текст
+    bg_color = imgui.get_color_u32_rgba(0.06, 0.06, 0.06, 0.90)
+    text_color = imgui.get_color_u32_rgba(1.0, 1.0, 1.0, 1.0)
     
     draw_list = imgui.get_foreground_draw_list()
     
@@ -1398,9 +1403,8 @@ class Aimbot:
             return target_list
 
         aim_attack_all = self.settings.get('aim_attack_all', False)
-        aim_bone_selection = self.settings.get('aim_bone', 0)
-        # Map combo box index to bone ID: 0=Head(6), 1=Body(4)
-        bone_id = 6 if aim_bone_selection == 0 else 4
+        aim_bone_selection = int(self.settings.get('aim_bone'))
+        bone_id = aim_bone_selection
 
         for i in range(1, 65):
             try:
@@ -1501,19 +1505,15 @@ class Aimbot:
                     move_x = (dx / distance) * speed_factor if distance > 1 else dx
                     move_y = (dy / distance) * speed_factor if distance > 1 else dy
 
-                    # Apply smooth human-like deviations
                     if s_cache['aimbot_smooth'] > 0:
                         smooth_strength = s_cache['aimbot_smooth'] * s_cache['aimbot_smooth_intensity']
-                        # Add circular/human-like movement pattern
-                        time_factor = time.time() * 2.0  # Frequency of deviation
+                        time_factor = time.time() * 2.0
                         deviation_x = math.sin(time_factor) * smooth_strength * (distance / 100.0)
                         deviation_y = math.cos(time_factor * 0.7) * smooth_strength * (distance / 100.0)
                         
-                        # Add some random micro-movements
                         deviation_x += random.uniform(-smooth_strength * 0.3, smooth_strength * 0.3)
                         deviation_y += random.uniform(-smooth_strength * 0.3, smooth_strength * 0.3)
                         
-                        # Reduce deviation as we get closer to target
                         distance_factor = min(1.0, distance / 200.0)
                         move_x += deviation_x * distance_factor
                         move_y += deviation_y * distance_factor
@@ -1630,6 +1630,7 @@ config_tabs = [
     {
         "name": "VISUALS", "icon": icons["VISUALS"],
         "elements": [
+            {"type": "checkbox", "label": "anti-flash", "name": "anti_flash", "default": False,  "dependencies": [("anti_vac", False)]},
             {"type": "color", "label": "Ally Color", "name": "esp_ally_color"},
             {"type": "color", "label": "Enemy Color", "name": "esp_enemy_color"},
             {"type": "color", "label": "Glow Color", "name": "glow_color"},
@@ -1659,7 +1660,7 @@ config_tabs = [
         "elements": [
             {"type": "checkbox", "label": "Enable Aimbot", "name": "aimbot_enable", "default": False},
             {"type": "bind", "label": "Aimbot Key", "name": "aimbot_key"},
-            {"type": "combo", "label": "Aim Bone", "name": "aim_bone", "items": ["Head", "Body"], "default": 0},
+            {"type": "slider", "label": "Aim Bone", "name": "aim_bone", "min": 1.0, "max": 22.0, "default": 7.0, "format": "%.0f"},
             {"type": "checkbox", "label": "Attack All", "name": "aim_attack_all", "default": False},
             {"type": "checkbox", "label": "Draw FOV", "name": "draw_fov", "default": True},
             {"type": "slider", "label": "FOV", "name": "aimbot_fov", "min": 1.0, "max": 100.0, "default": 40.0, "format": "%.1f"},
@@ -1731,7 +1732,7 @@ class Settings:
             "esp_bomb_color": (1.0, 0.0, 0.0, 1.0), "esp_bomb_defusing_color": (0.0, 1.0, 0.0, 1.0),
             "esp_dropped_weapon_color": (1.0, 1.0, 1.0, 1.0), "esp_fov_color": (1.0, 1.0, 1.0, 0.7),
             "esp_crosshair_color": (0.0, 1.0, 0.0, 1.0),
-            "glow_enable": False,
+            "glow_enable": False, "anti_flash": False,
             "glow_color": (1.0, 0.0, 0.0, 1.0),
             "aimbot_enable": False, "aimbot_key": "MOUSE5", "aim_bone": 4, "aim_attack_all": False, "draw_fov": True,
             "aimbot_fov": 40.0, "aimbot_speed": 1.6, "aimbot_smooth": 1.0, "aimbot_smooth_intensity": 1.0, "aimbot_ease_out": 0.85, "aimbot_overshoot_chance": 0.3, "aimbot_overshoot_strength": 3.5,
@@ -2388,7 +2389,21 @@ def DiscordRPC(settings):
                 rpc.close()
                 rpc = None
             time.sleep(1)
-
+def antiflash(settings):
+    client, pm = descritptor()
+    while True:
+        if not settings.get("anti_vac", True) and settings.get("anti_flash", True):
+            try:
+                player = pm.read_longlong(client + dwLocalPlayerPawn)
+                if player:
+                    flash_duration = pm.read_float(player + m_flFlashDuration)
+                    if flash_duration > 0:
+                        pm.write_float(player + m_flFlashDuration, 0.0)
+                    
+                    pm.write_float(player + m_flFlashMaxAlpha, 0.0)
+            except:
+                pass
+        
 if __name__ == "__main__":
     freeze_support()
     with Manager() as manager:
@@ -2402,7 +2417,9 @@ if __name__ == "__main__":
                 Process(target=aimbot, args=(settings,)),
                 Process(target=norecoil, args=(settings,)),
                 Process(target=auto_accept, args=(settings,)),
-                Process(target=DiscordRPC, args=(settings,))
+                Process(target=DiscordRPC, args=(settings,)),
+                Process(target=antiflash, args=(settings,))
+
             ]
             for process in processes:
                 process.start()
